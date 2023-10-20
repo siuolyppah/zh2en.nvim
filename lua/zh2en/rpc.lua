@@ -17,6 +17,14 @@ local function rpc_init()
   end
 end
 
+local function trim_quotes_and_spaces(str)
+  str = string.gsub(str, '^["%s]*', "")
+
+  str = string.gsub(str, '["%s]*$', "")
+
+  return str
+end
+
 --- send rpc to translate.
 --- @param origin string  chinese string to be translated into english
 local function rpc_translate(origin)
@@ -25,12 +33,9 @@ local function rpc_translate(origin)
     return
   end
 
-  -- require("zh2en.notify").info(tostring(rust_job_id))
   local translated = vim.fn.rpcrequest(rust_job_id, origin)
 
-  require("zh2en.notify").info(translated)
-
-  return translated
+  return trim_quotes_and_spaces(translated)
 end
 
 local M = {}

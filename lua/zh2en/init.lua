@@ -40,48 +40,37 @@ local function selection_area_pos()
 end
 
 local function get_visual_selection()
-  local csrow, cscol, cerow, cecol = selection_area_pos()
-
-  local lines = vim.fn.getline(csrow, cerow)
-  -- local n = cerow-csrow+1
-  local n = tbl_length(lines)
-  if n <= 0 then
-    return ""
-  end
-  lines[n] = string.sub(lines[n], 1, cecol)
-  lines[1] = string.sub(lines[1], cscol)
-  return table.concat(lines, "\n")
-end
-
---- replace current selection. must be one line.
---- @param to_replace string
-local function replace_selection(to_replace)
-  local csrow, cscol, cerow, cecol = selection_area_pos()
+  local csrow, _, cerow, _ = selection_area_pos()
 
   if csrow ~= cerow then
     require("zh2en.notify").error("the selection must be only one line")
     return
   end
-  local origin_line_begin = string.sub(vim.fn.getline(csrow), 1, cscol - 1)
-  local origin_line_end = string.sub(vim.fn.getline(cerow), cecol + 1)
 
-  local line_new_content = origin_line_begin .. to_replace .. origin_line_end
-  vim.fn.setline(csrow, line_new_content)
-
-  local cursor_row, cursor_col = unpack(vim.api.nvim_win_get_cursor(0))
-  cursor_col = string.len(origin_line_begin .. to_replace) - 1
-
-  vim.api.nvim_win_set_cursor(0, { cursor_row, cursor_col })
+  vim.cmd('normal! "ay')
+  return csrow, vim.fn.getreg("a")
 end
 
-local function translate(input)
-  return require("zh2en.rpc").rpc_translate(input)
+local function split_string(longger, str)
+  local startIdx, endIdx = string.find(longger, str, nil, true)
+  local part1 = string.sub(longger, 1, startIdx - 1)
+  local part2 = string.sub(longger, endIdx + 1)
+  return part1, part2
+end
+
+local function translate_and_replace(line_no, input)
+  local output = require("zh2en.rpc").rpc_translate(input)
+  local current_line = vim.fn.getline(line_no)
+
+  local left, right = split_string(current_line, input)
+  local newline = left .. output .. right
+
+  vim.fn.setline(line_no, newline)
 end
 
 local function translate_current_selection()
-  local selection = get_visual_selection()
-  local translate_output = translate(selection)
-  replace_selection(translate_output)
+  local line_no, selection = get_visual_selection()
+  translate_and_replace(line_no, selection)
 end
 
 M.translate_current_selection = translate_current_selection
