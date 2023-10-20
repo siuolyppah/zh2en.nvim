@@ -75,7 +75,7 @@ local function replace_selection(to_replace)
 end
 
 local function translate(input)
-  return input .. input
+  return require("zh2en.rpc").rpc_translate(input)
 end
 
 local function translate_current_selection()
